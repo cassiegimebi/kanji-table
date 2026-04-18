@@ -55,21 +55,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Format Meanings
             row[2] = (kdata.meanings || []).join("; ") || "—";
 
-            // Fetch Jisho Compounds via AllOrigins (since Jisho lacks native browser CORS)
+            // Fetch Compounds via KanjiAPI WORDS endpoint (robust native CORS)
             try {
-                const jishoRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://jisho.org/api/v1/search/words?keyword=' + character)}`);
-                if (jishoRes.ok) {
-                    const rawData = await jishoRes.json();
-                    const jishoData = JSON.parse(rawData.contents);
+                const wordsRes = await fetch(`https://kanjiapi.dev/v1/words/${character}`);
+                if (wordsRes.ok) {
+                    const wordsData = await wordsRes.json();
                     const compounds = [];
-                    for (const item of (jishoData.data || [])) {
-                        if (!item.japanese || item.japanese.length === 0) continue;
-                        const jp = item.japanese[0];
-                        const word = jp.word || jp.reading || "";
+                    for (const item of wordsData) {
+                        if (!item.variants || item.variants.length === 0) continue;
+                        
+                        const variant = item.variants[0];
+                        const word = variant.written || "";
                         if (!word.includes(character) || word.length <= 1) continue;
                         
-                        const reading = jp.reading || "";
-                        const meaning = item.senses?.[0]?.english_definitions?.slice(0, 2).join(", ") || "";
+                        const reading = variant.pronounced || "";
+                        const meaning = (item.meanings[0]?.glosses || []).slice(0, 2).join(", ") || "";
                         
                         compounds.push(`${word}${reading ? `（${reading}）` : ''}: ${meaning}`);
                         if (compounds.length >= 3) break;
