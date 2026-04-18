@@ -11,34 +11,47 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTableData = [];
 
     // Helper to format Japanese explanations from Wiktionary
-    function parseWiktionaryExtract(extract, meanings) {
-        if (!extract) return null;
+    function parseWiktionaryExtract(extract, meanings, character) {
+        if (!extract) return { jpDesc: null, components: "—" };
+        
+        let cleanedExtract = extract.replace(/\/\*?[^\/]+\//g, '');
         
         // Try to extract the "意義" (Meaning) section
-        const meaningMatch = extract.match(/===\s*意義\s*===[\s\S]*?([^\n=]+)/i);
+        const meaningMatch = cleanedExtract.match(/===\s*意義\s*===[\s\S]*?([^\n=]+)/i);
         let jpDesc = "";
         
         if (meaningMatch && meaningMatch[1]) {
             jpDesc = meaningMatch[1].trim();
         } else {
             // Find "名詞" section
-            const nounMatch = extract.match(/===\s*名詞\s*===[\s\S]*?([^\n=]+)/i);
+            const nounMatch = cleanedExtract.match(/===\s*名詞\s*===[\s\S]*?([^\n=]+)/i);
             if (nounMatch && nounMatch[1]) jpDesc = nounMatch[1].trim();
         }
 
-        const etymologyMatch = extract.match(/===\s*字源\s*===[\s\S]*?([^\n=]+)/i);
+        const etymologyMatch = cleanedExtract.match(/===\s*字源\s*===[\s\S]*?([^\n=]+)/i);
         let etymology = etymologyMatch ? etymologyMatch[1].trim() : "";
 
-        if (!jpDesc && !etymology) return null;
+        let components = [];
+        if (etymology) {
+            const kanjiRegex = /[\u4e00-\u9faf]/g;
+            const found = etymology.match(kanjiRegex);
+            if (found) {
+                const ignoreKanjis = new Set(['形','声','音','符','会','意','字','源','本','体','偏','略','説','派','生','部','首','指','事','同','説','略','旧','古','俗','上','下','左','右']);
+                components = [...new Set(found)].filter(k => k !== character && !ignoreKanjis.has(k));
+            }
+        }
+
+        if (!jpDesc && !etymology) return { jpDesc: null, components: components.length ? components.join("、") : "—" };
 
         let res = "";
         if (jpDesc) res += `[意義] ${jpDesc}`;
         if (etymology) res += (res ? " " : "") + `[字源] ${etymology}`;
-        return res;
+        
+        return { jpDesc: res, components: components.length ? components.join("、") : "—" };
     }
 
     async function fetchKanjiData(character) {
-        const row = [character, "—", "Not found", "—", "—"];
+        const row = [character, "—", "Not found", "—", "—", "—"];
         
         try {
             // Fetch core kanji stats
@@ -47,9 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const kdata = await kanjiRes.json();
 
             // Format Readings
-            const on = (kdata.on_readings || []).map(r => `●${r}`);
+            const on = kdata.on_readings || [];
             const kun = kdata.kun_readings || [];
-            const readings = [...on, ...kun].join("　");
+            const readings = [...on, ...kun].join("、");
             row[1] = readings || "—";
             
             // Format Meanings
@@ -92,17 +105,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         extract = pages[pid].extract || "";
                     }
 
-                    let trueExplanation = parseWiktionaryExtract(extract, kdata.meanings);
+                    let parsed = parseWiktionaryExtract(extract, kdata.meanings, character);
                     
-                    if (trueExplanation) {
-                        row[3] = trueExplanation;
+                    row[3] = parsed.components;
+                    
+                    if (parsed.jpDesc) {
+                        row[4] = parsed.jpDesc;
                     } else {
                         // Fallback
-                        row[3] = `音読み：${(kdata.on_readings||[]).join('、')}　訓読み：${(kdata.kun_readings||[]).join('、')}　意味：${kdata.meanings?.[0]||''}`;
+                        row[4] = `音読み：${(kdata.on_readings||[]).join('、')}　訓読み：${(kdata.kun_readings||[]).join('、')}　意味：${kdata.meanings?.[0]||''}`;
                     }
                 }
             } catch (e) {
-                row[3] = `音読み：${(kdata.on_readings||[]).join('、')}　意味：${kdata.meanings?.[0]||''}`;
+                row[4] = `音読み：${(kdata.on_readings||[]).join('、')}　意味：${kdata.meanings?.[0]||''}`;
             }
 
         } catch (err) {
@@ -174,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // CSV Download
     downloadCSVBtn.addEventListener('click', () => {
         if (!currentTableData.length) return;
-        const headers = ["Kanji", "Reading", "Meaning", "Japanese Explanation", "Compounds"];
+        const headers = ["Kanji", "Reading", "Meaning", "Components", "Japanese Explanation", "Compounds"];
         
         let csvContent = "\uFEFF" + headers.join(",") + "\n";
         currentTableData.forEach(row => {
@@ -195,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadXLSXBtn.addEventListener('click', () => {
         if (!currentTableData.length || typeof XLSX === 'undefined') return;
         
-        const headers = ["Kanji", "Reading", "Meaning", "Japanese Explanation", "Compounds"];
+        const headers = ["Kanji", "Reading", "Meaning", "Components", "Japanese Explanation", "Compounds"];
         const worksheet = XLSX.utils.aoa_to_sheet([headers, ...currentTableData]);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Kanji Reference");
