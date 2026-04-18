@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漢字</title>
+    <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌸</text></svg>'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="background" class="bg-blur"></div>
+
+    <div class="app-container glass-panel">
+        <header class="header">
+            <h1 class="gradient-text">Kanji Lexicon</h1>
+            <p class="subtitle">Enter kanji characters to generate a comprehensive reference table using native dictionary sources.</p>
+            <div class="badges">
+                <span class="badge">kanjiapi.dev</span>
+                <span class="badge">jisho.org</span>
+                <span class="badge">ja.wiktionary.org</span>
+            </div>
+        </header>
+
+        <main>
+            <div class="search-section">
+                <input type="text" id="kanjiInput" class="kanji-input glass-input" placeholder="e.g. 塁 塊 塚 墓 or 日本語" autofocus>
+                <button id="generateBtn" class="generate-btn glass-btn">Generate</button>
+            </div>
+
+            <div id="loadingIndicator" class="loading-container hidden">
+                <div class="spinner"></div>
+                <p>Fetching authentic Japanese dictionary entries... Please wait.</p>
+            </div>
+
+            <div id="errorContainer" class="error-container hidden"></div>
+
+            <div id="resultsSection" class="results-section hidden">
+                <div class="table-actions">
+                    <h2 class="results-title">Generated Results</h2>
+                    <div class="download-buttons">
+                        <button id="downloadCSV" class="download-btn">📥 CSV</button>
+                        <button id="downloadXLSX" class="download-btn">📥 XLSX</button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper glass-panel">
+                    <table id="kanjiTable">
+                        <thead>
+                            <tr>
+                                <th>Kanji</th>
+                                <th>Reading</th>
+                                <th>Meaning</th>
+                                <th>Japanese Explanation</th>
+                                <th>Compounds</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kanjiTableBody">
+                            <!-- Rows injected by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Built with Vanilla JavaScript & FastAPI · Zero API Keys</p>
+        </footer>
+    </div>
+
+    <!-- SheetJS for local Excel generation -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
