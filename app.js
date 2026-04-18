@@ -87,10 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         compounds.push(`${word}${reading ? `（${reading}）` : ''}: ${meaning}`);
                         if (compounds.length >= 3) break;
                     }
-                    row[4] = compounds.join("\n") || "No compounds found";
+                    row[5] = compounds.join("\n") || "No compounds found";
                 }
             } catch (e) {
-                row[4] = "Error fetching compounds";
+                row[5] = "Error fetching compounds";
             }
 
             // Fetch Wiktionary for TRUE Japanese Explanation (origin=* enables CORS)
